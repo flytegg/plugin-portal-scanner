@@ -6,13 +6,8 @@ import (
     "net/http"
 )
 
-type Resource struct {
-    Name string `json:"name"`
-    ID   int    `json:"id"`
-}
-
 func SpigotRequests() ([]Resource, error) {
-    get, err := http.Get("https://api.spiget.org/v2/resources/free?size=5&sort=-downloads&fields=id%2Cname")
+    get, err := http.Get("https://api.spiget.org/v2/resources/free?size=50&sort=-downloads&fields=id%2Cname")
     if err != nil {
         return nil, err
     }

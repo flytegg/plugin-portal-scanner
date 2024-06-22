@@ -15,13 +15,13 @@ func main() {
     loadEnv()
     authToken := os.Getenv("AUTH_TOKEN")
 
-    resources, err := platforms.SpigotRequests()
+    resources, err := platforms.HangarRequests()
     if err != nil {
         log.Fatal(err)
     }
 
     for _, resource := range resources {
-        err := postPluginData(resource.ID, authToken)
+        err := postPluginData(resource.ID, authToken, "hangar")
         if err != nil {
             log.Printf("Error posting data for resource ID %d: %v\n", resource.ID, err)
         } else {
@@ -39,8 +39,8 @@ func loadEnv() {
     }
 }
 
-func postPluginData(id int, authToken string) error {
-    url := fmt.Sprintf("https://api.pluginportal.link/v1/plugins/spigotmc?id=%d", id)
+func postPluginData(id string, authToken string, platformString string) error {
+    url := fmt.Sprintf("https://api.pluginportal.link/v1/plugins/" + platformString + "?id=" + id)
     req, err := http.NewRequest("POST", url, nil)
     if err != nil {
         return err
