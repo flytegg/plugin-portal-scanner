@@ -15,6 +15,28 @@ func main() {
     loadEnv()
     authToken := os.Getenv("AUTH_TOKEN")
 
+    resources, err := platforms.ModrinthRequests()
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Println(resources, authToken)
+
+    //for _, resource := range resources {
+    //    err := postPluginData(resource.ID, authToken, "hangar")
+    //    if err != nil {
+    //        log.Printf("Error posting data for resource ID %s: %v\n", resource.ID, err)
+    //    } else {
+    //        fmt.Printf("Successfully posted data for resource ID %s\n", resource.ID)
+    //    }
+    //    time.Sleep(100 * time.Millisecond)
+    //}
+
+}
+
+func registerHangar() {
+    authToken := os.Getenv("AUTH_TOKEN")
+
     resources, err := platforms.HangarRequests()
     if err != nil {
         log.Fatal(err)
@@ -23,12 +45,34 @@ func main() {
     for _, resource := range resources {
         err := postPluginData(resource.ID, authToken, "hangar")
         if err != nil {
-            log.Printf("Error posting data for resource ID %d: %v\n", resource.ID, err)
+            log.Printf("Error posting data for resource ID %s: %v\n", resource.ID, err)
         } else {
-            fmt.Printf("Successfully posted data for resource ID %d\n", resource.ID)
+            fmt.Printf("Successfully posted data for resource ID %s\n", resource.ID)
         }
         time.Sleep(100 * time.Millisecond)
     }
+}
+
+func registerSpigotMC() {
+    authToken := os.Getenv("AUTH_TOKEN")
+
+    resources, err := platforms.SpigotRequests()
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    for _, resource := range resources {
+        err := postPluginData(resource.ID, authToken, "spigotmc")
+        if err != nil {
+            log.Printf("Error posting data for resource ID %s: %v\n", resource.ID, err)
+        } else {
+            fmt.Printf("Successfully posted data for resource ID %s\n", resource.ID)
+        }
+        time.Sleep(100 * time.Millisecond)
+    }
+}
+
+func registerModrinth() {
 
 }
 
