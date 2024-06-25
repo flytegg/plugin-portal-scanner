@@ -2,8 +2,8 @@ package main
 
 import (
     "fmt"
+    "github.com/go-resty/resty/v2"
     "github.com/joho/godotenv"
-    "io"
     "log"
     "net/http"
     "os"
@@ -13,14 +13,8 @@ import (
 
 func main() {
     loadEnv()
-    authToken := os.Getenv("AUTH_TOKEN")
 
-    resources, err := platforms.ModrinthRequests()
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    fmt.Println(resources, authToken)
+    registerModrinth()
 
     //for _, resource := range resources {
     //    err := postPluginData(resource.ID, authToken, "hangar")
@@ -73,7 +67,22 @@ func registerSpigotMC() {
 }
 
 func registerModrinth() {
+    authToken := os.Getenv("AUTH_TOKEN")
 
+    resources, err := platforms.ModrinthRequests()
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    for _, resource := range resources {
+        err := postPluginData(resource.ID, authToken, "modrinth")
+        if err != nil {
+            log.Printf("Error posting data for resource ID %s: %v\n", resource.ID, err)
+        } else {
+            fmt.Printf("Successfully posted data for resource ID %s\n", resource.ID)
+        }
+        time.Sleep(100 * time.Millisecond)
+    }
 }
 
 func loadEnv() {
@@ -84,24 +93,21 @@ func loadEnv() {
 }
 
 func postPluginData(id string, authToken string, platformString string) error {
-    url := fmt.Sprintf("https://api.pluginportal.link/v1/plugins/" + platformString + "?id=" + id)
-    req, err := http.NewRequest("POST", url, nil)
+    url := fmt.Sprintf("https://api.pluginportal.link/v1/plugins/%s/%s", platformString, id)
+
+    client := resty.New().
+        EnableTrace()
+
+    resp, err := client.R().
+        SetHeader("Authorization", "Bearer "+authToken).
+        Post(url)
+
     if err != nil {
         return err
     }
 
-    req.Header.Set("Authorization", "Bearer "+authToken)
-
-    client := &http.Client{}
-    resp, err := client.Do(req)
-    if err != nil {
-        return err
-    }
-    defer resp.Body.Close()
-
-    if resp.StatusCode != http.StatusOK {
-        bodyBytes, _ := io.ReadAll(resp.Body)
-        return fmt.Errorf("error: %s", string(bodyBytes))
+    if resp.StatusCode() != http.StatusOK {
+        return fmt.Errorf("error: %s", resp.String())
     }
 
     return nil

@@ -1,7 +1,6 @@
 package platforms
 
 import (
-    "fmt"
     "github.com/go-resty/resty/v2"
 )
 
@@ -14,7 +13,7 @@ type Response struct {
     Hits []ModrinthProject `json:"hits"`
 }
 
-func ModrinthRequests() ([]ModrinthProject, error) {
+func ModrinthRequests() ([]Resource, error) {
     client := resty.New().
         SetHeaders(map[string]string{
             "User-Agent": "Plugin Portal Scanner (https://github.com/flytegg/plugin-portal)",
@@ -37,7 +36,14 @@ func ModrinthRequests() ([]ModrinthProject, error) {
         return nil, err
     }
 
-    fmt.Println(response.Hits)
+    // Convert to Resource type
+    resources := make([]Resource, len(response.Hits))
+    for i, hit := range response.Hits {
+        resources[i] = Resource{
+            Name: hit.Title,
+            ID:   hit.Slug,
+        }
+    }
 
-    return response.Hits, nil
+    return resources, nil
 }
