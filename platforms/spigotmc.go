@@ -1,28 +1,41 @@
 package platforms
 
 import (
-    "encoding/json"
-    "io"
-    "net/http"
+	"github.com/go-resty/resty/v2"
+	"strconv"
 )
 
+type SpigotResource struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
 func SpigotRequests() ([]Resource, error) {
-    get, err := http.Get("https://api.spiget.org/v2/resources/free?size=50&sort=-downloads&fields=id%2Cname")
-    if err != nil {
-        return nil, err
-    }
-    defer get.Body.Close()
+	client := resty.New()
 
-    bodyBytes, err := io.ReadAll(get.Body)
-    if err != nil {
-        return nil, err
-    }
+	var spigotResources []SpigotResource
 
-    var resources []Resource
-    err = json.Unmarshal(bodyBytes, &resources)
-    if err != nil {
-        return nil, err
-    }
+	_, err := client.R().
+		EnableTrace().
+		SetDebug(true).
+		SetResult(&spigotResources).
+		SetQueryParams(map[string]string{
+			"size":   "500",
+			"sort":   "-downloads",
+			"fields": "id,name",
+		}).
+		Get("https://api.spiget.org/v2/resources/free")
+	if err != nil {
+		return nil, err
+	}
 
-    return resources, nil
+	resources := make([]Resource, len(spigotResources))
+	for i, hit := range spigotResources {
+		resources[i] = Resource{
+			Name: hit.Name,
+			ID:   strconv.Itoa(hit.ID),
+		}
+	}
+
+	return resources, nil
 }
