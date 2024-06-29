@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"plugin-portal-scanner/platforms"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -46,13 +47,13 @@ func registerHangar() {
 	}
 
 	for _, resource := range resources {
-		err := postPluginData(resource.ID, authToken, "hangar")
+		err := postPluginDataWithRetry(resource.ID, authToken, "hangar")
 		if err != nil {
 			log.Printf("Error posting data for resource ID %s: %v\n", resource.ID, err)
 		} else {
 			fmt.Printf("Successfully posted data for resource ID %s\n", resource.ID)
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(1 * time.Millisecond)
 	}
 }
 
@@ -64,14 +65,28 @@ func registerSpigotMC() {
 		log.Fatal(err)
 	}
 
+	filteredResources := make([]platforms.Resource, 0)
 	for _, resource := range resources {
-		err := postPluginData(resource.ID, authToken, "spigotmc")
+		id, err := strconv.Atoi(resource.ID)
 		if err != nil {
-			log.Printf("Error posting data for resource ID %s: %v\n", resource.ID, err)
-		} else {
-			fmt.Printf("Successfully posted data for resource ID %s\n", resource.ID)
+			log.Printf("Error converting resource ID %s to int: %v\n", resource.ID, err)
+			continue
 		}
-		time.Sleep(100 * time.Millisecond)
+		if id >= 59000 {
+			filteredResources = append(filteredResources, resource)
+		}
+	}
+
+	for _, resource := range filteredResources {
+		go func(resource platforms.Resource) {
+			err := postPluginDataWithRetry(resource.ID, authToken, "spigotmc")
+			if err != nil {
+				log.Printf("Error posting data for resource ID %s: %v\n", resource.ID, err)
+			} else {
+				fmt.Printf("Successfully posted data for resource ID %s\n", resource.ID)
+			}
+		}(resource)
+		time.Sleep(400 * time.Millisecond)
 	}
 }
 
@@ -84,7 +99,7 @@ func registerModrinth() {
 	}
 
 	for _, resource := range resources {
-		err := postPluginData(resource.ID, authToken, "modrinth")
+		err := postPluginDataWithRetry(resource.ID, authToken, "modrinth")
 		if err != nil {
 			log.Printf("Error posting data for resource ID %s: %v\n", resource.ID, err)
 		} else {
@@ -101,23 +116,32 @@ func loadEnv() {
 	}
 }
 
-func postPluginData(id string, authToken string, platformString string) error {
+func postPluginDataWithRetry(id string, authToken string, platformString string) error {
 	url := fmt.Sprintf("https://api.pluginportal.link/v1/plugins/%s/%s", platformString, id)
+	client := resty.New().EnableTrace()
 
-	client := resty.New().
-		EnableTrace()
-
+	// First attempt
 	resp, err := client.R().
 		SetHeader("Authorization", "Bearer "+authToken).
 		Post(url)
+	if err == nil && resp.StatusCode() == http.StatusOK {
+		return nil
+	}
 
+	// Log first failure
+	log.Printf("First attempt failed for resource ID %s: %v\n", id, err)
+
+	// Second attempt
+	resp, err = client.R().
+		SetHeader("Authorization", "Bearer "+authToken).
+		Post(url)
+	if err == nil && resp.StatusCode() == http.StatusOK {
+		return nil
+	}
+
+	// Return error if the second attempt fails
 	if err != nil {
-		return err
+		return fmt.Errorf("second attempt failed for resource ID %s: %v", id, err)
 	}
-
-	if resp.StatusCode() != http.StatusOK {
-		return fmt.Errorf("error: %s", resp.String())
-	}
-
-	return nil
+	return fmt.Errorf("second attempt failed for resource ID %s: %s", id, resp.String())
 }
