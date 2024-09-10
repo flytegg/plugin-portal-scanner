@@ -72,7 +72,7 @@ func registerSpigotMC() {
 			log.Printf("Error converting resource ID %s to int: %v\n", resource.ID, err)
 			continue
 		}
-		if id >= 59000 {
+		if id >= 0 { // Temp set to 0 in case we want to change
 			filteredResources = append(filteredResources, resource)
 		}
 	}

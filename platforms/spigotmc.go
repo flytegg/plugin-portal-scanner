@@ -40,10 +40,9 @@ func fetchSpigotResources(page int) ([]Resource, error) {
 		EnableTrace().
 		SetResult(&spigotResources).
 		SetQueryParams(map[string]string{
-			"size": "55000",
-			//"sort":   "-downloads", // Commented due to timeout issues
+			"size":   "10000",
+			"sort":   "-updateDate", // Can cause performance issues
 			"fields": "name",
-			"page":   strconv.Itoa(page),
 		}).
 		Get("https://api.spiget.org/v2/resources/free")
 	if err != nil {
