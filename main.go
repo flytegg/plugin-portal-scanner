@@ -17,22 +17,22 @@ func main() {
 	loadEnv()
 
 	var wg sync.WaitGroup
-	wg.Add(1) // Number of goroutines
+	wg.Add(3) // Number of goroutines
 
 	go func() {
 		defer wg.Done()
 		registerSpigotMC()
 	}()
 
-	//go func() {
-	//    defer wg.Done()
-	//    registerModrinth()
-	//}()
-	//
-	//go func() {
-	//    defer wg.Done()
-	//    registerHangar()
-	//}()
+	go func() {
+	   defer wg.Done()
+	   registerModrinth()
+	}()
+	
+	go func() {
+	   defer wg.Done()
+	   registerHangar()
+	}()
 
 	wg.Wait() // Wait for all goroutines to finish
 	log.Println("All registrations completed")

@@ -43,15 +43,22 @@ func fetchResources(offset int) ([]Project, error) {
 }
 
 func HangarRequests() ([]Resource, error) {
-	offsets := []int{0, 50, 75, 100, 125, 150}
 	var allProjects []Project
-
-	for _, offset := range offsets {
+	offset := 0
+	
+	for {
 		projects, err := fetchResources(offset)
 		if err != nil {
 			return nil, err
 		}
+		
+		// If no more projects are returned, break the loop
+		if len(projects) == 0 {
+			break
+		}
+		
 		allProjects = append(allProjects, projects...)
+		offset += 25 // Increment by the limit value used in fetchResources
 	}
 
 	resources := make([]Resource, len(allProjects))
