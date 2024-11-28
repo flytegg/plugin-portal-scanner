@@ -17,22 +17,22 @@ func main() {
 	loadEnv()
 
 	var wg sync.WaitGroup
-	wg.Add(3) // Number of goroutines
+	wg.Add(1) // Number of goroutines
 
-	go func() {
-		defer wg.Done()
-		registerSpigotMC()
-	}()
+	// go func() {
+	// 	defer wg.Done()
+	// 	registerSpigotMC()
+	// }()
 
 	go func() {
 	   defer wg.Done()
 	   registerModrinth()
 	}()
 	
-	go func() {
-	   defer wg.Done()
-	   registerHangar()
-	}()
+	// go func() {
+	//    defer wg.Done()
+	//    registerHangar()
+	// }()
 
 	wg.Wait() // Wait for all goroutines to finish
 	log.Println("All registrations completed")
@@ -98,15 +98,35 @@ func registerModrinth() {
 		log.Fatal(err)
 	}
 
-	for _, resource := range resources {
+	total := len(resources)
+	successful := 0
+	failed := 0
+	startTime := time.Now()
+
+	log.Printf("Starting to register %d Modrinth plugins...", total)
+
+	for i, resource := range resources {
 		err := postPluginDataWithRetry(resource.ID, authToken, "modrinth")
 		if err != nil {
 			log.Printf("Error posting data for resource ID %s: %v\n", resource.ID, err)
+			failed++
 		} else {
-			fmt.Printf("Successfully posted data for resource ID %s\n", resource.ID)
+			successful++
+			if i%50 == 0 { // Progress update every 50 plugins
+				log.Printf("Progress: %d/%d Modrinth plugins processed (%.1f%%)", i+1, total, float64(i+1)/float64(total)*100)
+			}
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(250 * time.Millisecond)
 	}
+
+	duration := time.Since(startTime)
+	log.Printf("\nModrinth registration completed:")
+	log.Printf("- Total plugins processed: %d", total)
+	log.Printf("- Successful registrations: %d", successful)
+	log.Printf("- Failed registrations: %d", failed)
+	log.Printf("- Success rate: %.1f%%", float64(successful)/float64(total)*100)
+	log.Printf("- Time taken: %v", duration)
+	log.Printf("- Average processing rate: %.2f plugins/minute", float64(total)/(duration.Minutes()))
 }
 
 func loadEnv() {
